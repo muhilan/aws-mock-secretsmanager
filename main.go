@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 	// "bufio"
-	// "strings"
+	"strings"
 	"path/filepath"
 	// "net/http/httputil"
 	"io/ioutil"
@@ -93,19 +93,8 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	// dataMap := map[string]string{
- //        "Name": "public-cert",
- //        "VersionId" : "yu87678",
- //        "SecretString" : "879879",
- //        "VersionStages" : [
- //        	"AWSCURRENT"
- //        ],
- //        "CreatedDate" : 158787987.78,
- //        "ARN" : "arn:aws:secretsmanager:us-east-1:1234567789:secret:public-cert-89cXyz",
- //    }
-	if r.Method == http.MethodPost {
-      
 
+	if r.Method == http.MethodPost {      
 
 	// requestDump, err := httputil.DumpRequest(r, true)
 	// if err != nil {
@@ -146,8 +135,10 @@ func load(file string, name string) {
 	if err != nil {
 		log.Println(err)
 	}
+	var key = name[0:len(name)-len(filepath.Ext(name))]
+	var finalKey = strings.Replace(key,".","/",-1)
 	dataMap.lock.Lock()
-	dataMap.data[name[0:len(name)-len(filepath.Ext(name))]] = string(content)
+	dataMap.data[finalKey] = string(content)
 	dataMap.lock.Unlock()
 	
 }
