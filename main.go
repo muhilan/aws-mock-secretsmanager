@@ -59,7 +59,7 @@ func main() {
 		baseDir = "/data"
 	}
 	
-	if _, err := os.Stat("/path/to/whatever"); os.IsNotExist(err) {
+	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
 		log.Printf("Path \"%s\" does not exist", baseDir)
 		return
 	}
