@@ -59,6 +59,10 @@ func main() {
 		baseDir = "/data"
 	}
 	
+	if _, err := os.Stat("/path/to/whatever"); os.IsNotExist(err) {
+		log.Printf("Path \"%s\" does not exist", baseDir)
+		return
+	}
 
 	start := time.Now()
 	// Traverse filepath and update data map
