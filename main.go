@@ -14,10 +14,12 @@ import (
 	"sync"
 	"math/rand"
 	"fmt"
+	"time"
 
 )
 
 var letterRunes = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+ var wg sync.WaitGroup
 
 func RandStringRunes(n int) string {
     b := make([]rune, n)
@@ -51,26 +53,26 @@ type MyMap struct {
 func main() {
 	dataMap = MyMap{data: make(map[string]string)}
 
-	baseDir := os.Getenv("DATA_DIR")+ "/test/"
-	log.Println("baseDir is "+ baseDir)
+	baseDir := os.Getenv("DATA_DIR")
 
+	if baseDir == "" {
+		baseDir = "/data"
+	}
+	
 
+	start := time.Now()
 	// Traverse filepath and update data map
     err := filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
     	if err != nil {
-			log.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
+			log.Printf("Error %v\n", err)
 			return err
 		}
-		log.Println(path)
-	    log.Println(info.Name())
-    	if info.IsDir() {
-			log.Printf("skipping a dir without errors: %+v \n", info.Name())
-			// return filepath.SkipDir
-		} else {
+		// Max AWS secret size is 4 KB
+    	if !info.IsDir() && info.Size() <= 4096 {
 			go load(path, info.Name())
-		}
-	    
-	    
+			// log.Printf("Name %s, Size %d" ,info.Name(),info.Size())
+			wg.Add(1)
+		} 
 	    return nil
     })
 
@@ -79,7 +81,9 @@ func main() {
         panic(err)
     }
 	
-	log.Println(dataMap)
+	wg.Wait()
+	elapsed := time.Since(start)
+    log.Printf("Added %d secrets in %s", len(dataMap.data),elapsed)
 
 	http.HandleFunc("/", helloWorldHandler)
 	http.ListenAndServe(":8080", nil)
@@ -114,13 +118,15 @@ func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
     log.Println(r)
 	response := GetSecretsResponse{}
 	value := dataMap.data[r.SecretId]
+
 	if value == "" {
 		log.Println("key not found " + r.SecretId)
 		io.WriteString(w, "Not found")
 		return
 	}
 	response.SecretString = value;
-	response.ARN = fmt.Sprintf("arn:aws:secretsmanager:us-east-1:1234567789:secret:%s-%s", r.SecretId, RandStringRunes(6))
+	response.ARN = fmt.Sprintf("arn:aws:secretsmanager:us-west-2:1234567789:secret:%s-%s", r.SecretId, RandStringRunes(6))
+	response.VersionId = RandStringRunes(6)
     w.Header().Add("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
     _ = json.NewEncoder(w).Encode(response)
@@ -131,6 +137,7 @@ func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func load(file string, name string) {
+	defer wg.Done()
 	content, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Println(err)
@@ -138,6 +145,5 @@ func load(file string, name string) {
 	dataMap.lock.Lock()
 	dataMap.data[name[0:len(name)-len(filepath.Ext(name))]] = string(content)
 	dataMap.lock.Unlock()
-	log.Println(dataMap)
 	
 }
