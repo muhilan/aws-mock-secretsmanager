@@ -2,7 +2,7 @@
 
 aws-mock-secretsmanager is a lightweight AWS secretsmanager implemented in golang, mostly useful in tests.
 
-####Supported Operations
+#### Supported Operations
 
 get-secret-value
 
