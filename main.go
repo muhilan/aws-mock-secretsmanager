@@ -116,8 +116,8 @@ func createMap(baseDir string) {
 			log.Printf("Error %v\n", err)
 			return err
 		}
-		// Max AWS secret size is 4 KB
-		if !info.IsDir() && info.Size() <= 4096 {
+		// Max AWS secret size is 10 KB
+		if !info.IsDir() && info.Size() <= 10000 {
 			go load(path, info.Name())
 			wg.Add(1)
 		}
